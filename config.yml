@@ -1,0 +1,19 @@
+# The prefix used for plugin messages
+prefix:
+    server: "&8[&3stAnalytics&8]: &7"
+
+# Various messages
+messages:
+    no-perms: "&cYou don't have permission to do that!"
+    no-console: "&cYou must be a player to do that!"
+    no-args: "&cNo arguments given!"
+    invalid-arg: "&cInvalid argument(s)!"
+
+# MySQL connection information
+mysql:
+    hostname: localhost
+    port: 3306
+    username: root
+    password: password
+    database: stAnalytics
+    prefix: ""

@@ -1,0 +1,21 @@
+name: stAnalytics
+version: 1.0.0
+description: Allows titles (vault prefixes) to be set
+author: Jerred Shepherd (RiotShielder)
+website: http://shepherdjerred.com/
+
+main: com.shepherdjerred.stanalytics.Main
+
+commands:
+    sta:
+        description: Base command
+        aliases: [stanalytics]
+        
+permissions:
+    stAnalytics.*:
+        description: Gives access to all plugin functions
+        children:
+            stAnalytics.reload: true
+    stAnalytics.reload:
+        description: Gives access to /sta reload
+        default: op
