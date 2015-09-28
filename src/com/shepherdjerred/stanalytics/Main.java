@@ -55,8 +55,8 @@ public class Main extends JavaPlugin {
 		    if (!(result)) { //Create the tables if they don't exist
 			Bukkit.broadcastMessage("Some tables don't exist! Initializing database now.");
 			MySQL.getInstance().runUpdate("CREATE TABLE players(username VARCHAR(16), uuid CHAR(36), date DATE)");
-			MySQL.getInstance().runUpdate("CREATE TABLE uniqueplayercount(date DATE, count SMALLINT(6))");
-			MySQL.getInstance().runUpdate("CREATE TABLE playercount(date DATE, time TIME, numberonline SMALLINT(6), playerlist TEXT)");
+			MySQL.getInstance().runUpdate("CREATE TABLE daily(date DATE, uniqueplayers SMALLINT(6), new SMALLINT(6), UNIQUE (date))");
+			MySQL.getInstance().runUpdate("CREATE TABLE periodic(date DATE, time TIME, count SMALLINT(6), list TEXT)");
 		    } else {
 			getLogger().info("All tables are present in the database.");
 		    }
@@ -67,12 +67,12 @@ public class Main extends JavaPlugin {
 	} catch (ClassNotFoundException e) {
 	    e.printStackTrace();
 	    getLogger().info("Connection to MySQL database failed!");
-	    getLogger().info("Disabling stChat due to MySQL error");
+	    getLogger().info("Disabling stAnalytics due to MySQL error");
 	    Bukkit.getPluginManager().disablePlugin(this);
 	} catch (SQLException e) {
 	    e.printStackTrace();
 	    getLogger().info("Connection to MySQL database failed!");
-	    getLogger().info("Disabling stChat due to MySQL error");
+	    getLogger().info("Disabling stAnalytics due to MySQL error");
 	    Bukkit.getPluginManager().disablePlugin(this);
 	}
 
@@ -87,7 +87,7 @@ public class Main extends JavaPlugin {
 	DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 	DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
 	
-	// Send unique player count every 15 minutes
+	// Send unique player count every 5 minutes
 	    scheduler.scheduleSyncRepeatingTask(this, new Runnable() {
 		@Override
 		public void run() {
@@ -103,9 +103,9 @@ public class Main extends JavaPlugin {
 		    
 		    String playerString = String.join(", ", playerArray);
 		    
-		    MySQL.getInstance().runUpdate("INSERT INTO playercount VALUES ('" + dateFormat.format(date) + "','" + timeFormat.format(date) + "','" + count + "','" + playerString + "') ");
+		    MySQL.getInstance().runUpdate("INSERT INTO periodic VALUES ('" + dateFormat.format(date) + "','" + timeFormat.format(date) + "','" + count + "','" + playerString + "') ");
 		}
-	    }, 6000, 6000);
+	    }, getConfig().getInt("interval") * 60 * 20, getConfig().getInt("interval") * 60 * 20);
 	}
 
     // Method for getting strings from the config with color codes

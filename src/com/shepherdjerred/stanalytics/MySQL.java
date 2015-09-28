@@ -6,7 +6,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.bukkit.Bukkit;
 
@@ -74,8 +77,8 @@ public class MySQL {
 
 		    DatabaseMetaData dbm = connection.getMetaData();
 		    boolean playersExists = false;
-		    boolean playercountExists = false;
-		    boolean uniqueplayercountExists = false;
+		    boolean periodicExists = false;
+		    boolean dailyExists = false;
 		    boolean allExist = false;
 
 		    // Check if the players table exists
@@ -83,21 +86,21 @@ public class MySQL {
 		    if (result.next()) {
 			playersExists = true;
 		    }
-		    
-		 // Check if the uniqueplayercount table exists
-		    result = dbm.getTables(null, null, "uniqueplayercount", null);
+
+		    // Check if the daily table exists
+		    result = dbm.getTables(null, null, "daily", null);
 		    if (result.next()) {
-			uniqueplayercountExists = true;
+			dailyExists = true;
 		    }
 
-		    // Check if the playercount table exists
-		    result = dbm.getTables(null, null, "playercount", null);
+		    // Check if the periodic table exists
+		    result = dbm.getTables(null, null, "periodic", null);
 		    if (result.next()) {
-			playercountExists = true;
+			periodicExists = true;
 		    }
 
 		    // Check if all tables exist
-		    if (playersExists && playercountExists && uniqueplayercountExists) {
+		    if (playersExists && periodicExists && dailyExists) {
 			allExist = true;
 		    }
 
@@ -117,9 +120,9 @@ public class MySQL {
 	});
 
     }
-    
-    // MySQL check if player exists in database
-    public void checkPlayer(BooleanConsumer<Boolean> consumer, String uuid) {
+
+    // MySQL check if player exists in database on certain date
+    public void checkPlayerOnDate(BooleanConsumer<Boolean> consumer, String uuid) {
 
 	Bukkit.getServer().getScheduler().runTaskAsynchronously(Main.getInstance(), new Runnable() {
 	    @Override
@@ -130,7 +133,10 @@ public class MySQL {
 		    statement = connection.createStatement();
 		    boolean exists = false;
 
-		    ResultSet result = statement.executeQuery("SELECT * from players WHERE uuid = '" + uuid + "';");
+		    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+		    Date date = new Date();
+
+		    ResultSet result = statement.executeQuery("SELECT * from players WHERE uuid = '" + uuid + "' AND date ='" + dateFormat.format(date) + "';");
 
 		    if (result.next()) {
 			exists = true;
@@ -152,7 +158,46 @@ public class MySQL {
 	});
 
     }
-    
+
+    // MySQL check if player exists in database
+    public void checkPlayer(BooleanConsumer<Boolean> consumer, String uuid) {
+
+	Bukkit.getServer().getScheduler().runTaskAsynchronously(Main.getInstance(), new Runnable() {
+	    @Override
+	    public void run() {
+
+		try {
+		    openConnection();
+		    statement = connection.createStatement();
+		    boolean exists = false;
+
+		    ResultSet result = statement.executeQuery("SELECT * from players WHERE uuid = '" + uuid + "';");
+
+		    result.last();
+		    int size = result.getRow();
+		    result.beforeFirst();
+
+		    if (size > 1) {
+			exists = false;
+		    }
+
+		    // Return exists to the consumer
+		    if (consumer != null) {
+			consumer.accept(exists);
+		    }
+
+		    result.close();
+		} catch (ClassNotFoundException e) {
+		    e.printStackTrace();
+		} catch (SQLException e) {
+		    e.printStackTrace();
+		}
+
+	    }
+	});
+
+    }
+
     // MySQL get value of unique players
     public void getUniquePlayers(IntegerConsumer<Integer> consumer, String date) {
 
@@ -165,10 +210,45 @@ public class MySQL {
 		    statement = connection.createStatement();
 		    Integer count = 0;
 
-		    ResultSet result = statement.executeQuery("SELECT * from uniqueplayercount WHERE date = '" + date + "';");
+		    ResultSet result = statement.executeQuery("SELECT * from daily WHERE date = '" + date + "';");
 
 		    if (result.next()) {
-			count = result.getInt("count");
+			count = result.getInt("uniqueplayers");
+		    }
+
+		    // Return count to the consumer
+		    if (consumer != null) {
+			consumer.accept(count);
+		    }
+
+		    result.close();
+		} catch (ClassNotFoundException e) {
+		    e.printStackTrace();
+		} catch (SQLException e) {
+		    e.printStackTrace();
+		}
+
+	    }
+	});
+
+    }
+
+    // MySQL get value of new players
+    public void getNewPlayers(IntegerConsumer<Integer> consumer, String date) {
+
+	Bukkit.getServer().getScheduler().runTaskAsynchronously(Main.getInstance(), new Runnable() {
+	    @Override
+	    public void run() {
+
+		try {
+		    openConnection();
+		    statement = connection.createStatement();
+		    Integer count = 0;
+
+		    ResultSet result = statement.executeQuery("SELECT * from daily WHERE date = '" + date + "';");
+
+		    if (result.next()) {
+			count = result.getInt("new");
 		    }
 
 		    // Return count to the consumer
@@ -193,7 +273,7 @@ public class MySQL {
     public interface BooleanConsumer<Boolean> {
 	public void accept(boolean result);
     }
-    
+
     // MySQL IntegerConsumer
     @SuppressWarnings("hiding")
     public interface IntegerConsumer<Integer> {

@@ -18,18 +18,46 @@ public class JoinEvent implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
 
-	IntegerConsumer<Integer> incrementCount = new IntegerConsumer<Integer>() {
+	IntegerConsumer<Integer> incrementNewCount = new IntegerConsumer<Integer>() {
+	    public void accept(Integer result) {
+		result++;
+
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+		Date date = new Date();
+
+		MySQL.getInstance().runUpdate("UPDATE daily SET new ='" + result + "' WHERE date='" + dateFormat.format(date) + "'");
+	    }
+	};
+
+	BooleanConsumer<Boolean> ifPlayerNew = new BooleanConsumer<Boolean>() {
+	    public void accept(boolean result) {
+		if (!(result)) {
+		    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+		    Date date = new Date();
+
+		    MySQL.getInstance().getNewPlayers(incrementNewCount, dateFormat.format(date));
+		}
+	    }
+	};
+
+	IntegerConsumer<Integer> incrementUniqueCount = new IntegerConsumer<Integer>() {
 	    public void accept(Integer result) {
 
 		if (result > 0) {
 		    result++;
-		    MySQL.getInstance().runUpdate("UPDATE uniqueplayercount SET count ='" + result + "'");
+
+		    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+		    Date date = new Date();
+
+		    MySQL.getInstance().runUpdate("UPDATE daily SET uniqueplayers ='" + result + "' WHERE date='" + dateFormat.format(date) + "'");
 		} else {
 		    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
 		    Date date = new Date();
 
-		    MySQL.getInstance().runUpdate("INSERT INTO uniqueplayercount VALUES ('" + dateFormat.format(date) + "'," + 1 + ")");
+		    MySQL.getInstance().runUpdate("INSERT INTO daily VALUES ('" + dateFormat.format(date) + "'," + 1 + "," + 0 + ")");
 		}
+
+		MySQL.getInstance().checkPlayer(ifPlayerNew, event.getPlayer().getUniqueId().toString());
 
 	    }
 	};
@@ -40,7 +68,7 @@ public class JoinEvent implements Listener {
 		    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
 		    Date date = new Date();
 
-		    MySQL.getInstance().getUniquePlayers(incrementCount, dateFormat.format(date));
+		    MySQL.getInstance().getUniquePlayers(incrementUniqueCount, dateFormat.format(date));
 
 		    Main.getInstance().getLogger().info("Adding " + event.getPlayer().getName() + " to players");
 		    MySQL.getInstance().runUpdate("INSERT INTO players VALUES ('" + event.getPlayer().getName() + "','" + event.getPlayer().getUniqueId() + "','" + dateFormat.format(date) + "')");
@@ -49,6 +77,6 @@ public class JoinEvent implements Listener {
 	};
 
 	// Run the table checking
-	MySQL.getInstance().checkPlayer(ifPlayerExists, event.getPlayer().getUniqueId().toString());
+	MySQL.getInstance().checkPlayerOnDate(ifPlayerExists, event.getPlayer().getUniqueId().toString());
     }
 }
