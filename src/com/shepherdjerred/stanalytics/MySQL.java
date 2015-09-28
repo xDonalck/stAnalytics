@@ -73,24 +73,31 @@ public class MySQL {
 		    statement = connection.createStatement();
 
 		    DatabaseMetaData dbm = connection.getMetaData();
-		    boolean dailyuniqueplayersExists = false;
+		    boolean playersExists = false;
 		    boolean playercountExists = false;
+		    boolean uniqueplayercountExists = false;
 		    boolean allExist = false;
 
 		    // Check if the players table exists
-		    ResultSet result = dbm.getTables(null, null, "dailyuniqueplayers", null);
+		    ResultSet result = dbm.getTables(null, null, "players", null);
 		    if (result.next()) {
-			dailyuniqueplayersExists = true;
+			playersExists = true;
+		    }
+		    
+		 // Check if the uniqueplayercount table exists
+		    result = dbm.getTables(null, null, "uniqueplayercount", null);
+		    if (result.next()) {
+			uniqueplayercountExists = true;
 		    }
 
-		    // Check if the channels table exists
+		    // Check if the playercount table exists
 		    result = dbm.getTables(null, null, "playercount", null);
 		    if (result.next()) {
 			playercountExists = true;
 		    }
 
 		    // Check if all tables exist
-		    if (dailyuniqueplayersExists && playercountExists) {
+		    if (playersExists && playercountExists && uniqueplayercountExists) {
 			allExist = true;
 		    }
 
@@ -123,15 +130,50 @@ public class MySQL {
 		    statement = connection.createStatement();
 		    boolean exists = false;
 
-		    ResultSet result = statement.executeQuery("SELECT * from dailyuniqueplayers WHERE uuid = '" + uuid + "';");
+		    ResultSet result = statement.executeQuery("SELECT * from players WHERE uuid = '" + uuid + "';");
 
 		    if (result.next()) {
 			exists = true;
 		    }
 
-		    // Return allExist to the consumer
+		    // Return exists to the consumer
 		    if (consumer != null) {
 			consumer.accept(exists);
+		    }
+
+		    result.close();
+		} catch (ClassNotFoundException e) {
+		    e.printStackTrace();
+		} catch (SQLException e) {
+		    e.printStackTrace();
+		}
+
+	    }
+	});
+
+    }
+    
+    // MySQL get value of unique players
+    public void getUniquePlayers(IntegerConsumer<Integer> consumer, String date) {
+
+	Bukkit.getServer().getScheduler().runTaskAsynchronously(Main.getInstance(), new Runnable() {
+	    @Override
+	    public void run() {
+
+		try {
+		    openConnection();
+		    statement = connection.createStatement();
+		    Integer count = 0;
+
+		    ResultSet result = statement.executeQuery("SELECT * from uniqueplayercount WHERE date = '" + date + "';");
+
+		    if (result.next()) {
+			count = result.getInt("count");
+		    }
+
+		    // Return count to the consumer
+		    if (consumer != null) {
+			consumer.accept(count);
 		    }
 
 		    result.close();
@@ -150,6 +192,12 @@ public class MySQL {
     @SuppressWarnings("hiding")
     public interface BooleanConsumer<Boolean> {
 	public void accept(boolean result);
+    }
+    
+    // MySQL IntegerConsumer
+    @SuppressWarnings("hiding")
+    public interface IntegerConsumer<Integer> {
+	public void accept(Integer result);
     }
 
     // MySQL ArrayListConsumer

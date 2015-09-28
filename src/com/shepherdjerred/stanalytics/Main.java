@@ -54,8 +54,9 @@ public class Main extends JavaPlugin {
 		public void accept(boolean result) {
 		    if (!(result)) { //Create the tables if they don't exist
 			Bukkit.broadcastMessage("Some tables don't exist! Initializing database now.");
-			MySQL.getInstance().runUpdate("CREATE TABLE dailyuniqueplayers(username VARCHAR(16), uuid CHAR(36), date DATE)");
-			MySQL.getInstance().runUpdate("CREATE TABLE playercount(time TIME, playerscount SMALLINT(6), playerlist TEXT)");
+			MySQL.getInstance().runUpdate("CREATE TABLE players(username VARCHAR(16), uuid CHAR(36), date DATE)");
+			MySQL.getInstance().runUpdate("CREATE TABLE uniqueplayercount(date DATE, count SMALLINT(6))");
+			MySQL.getInstance().runUpdate("CREATE TABLE playercount(date DATE, time TIME, numberonline SMALLINT(6), playerlist TEXT)");
 		    } else {
 			getLogger().info("All tables are present in the database.");
 		    }
@@ -83,7 +84,8 @@ public class Main extends JavaPlugin {
 	
 	// Setup variables for announcers
 	BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
-	DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+	DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+	DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
 	
 	// Send unique player count every 15 minutes
 	    scheduler.scheduleSyncRepeatingTask(this, new Runnable() {
@@ -101,9 +103,9 @@ public class Main extends JavaPlugin {
 		    
 		    String playerString = String.join(", ", playerArray);
 		    
-		    MySQL.getInstance().runUpdate("INSERT INTO playercount VALUES ('" + dateFormat.format(date) + "','" + count + "','" + playerString + "') ");
+		    MySQL.getInstance().runUpdate("INSERT INTO playercount VALUES ('" + dateFormat.format(date) + "','" + timeFormat.format(date) + "','" + count + "','" + playerString + "') ");
 		}
-	    }, 18000, 18000);
+	    }, 6000, 6000);
 	}
 
     // Method for getting strings from the config with color codes
